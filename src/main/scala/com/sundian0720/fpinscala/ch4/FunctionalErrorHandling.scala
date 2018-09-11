@@ -50,15 +50,19 @@ object FunctionalErrorHandling {
 
   case object NONE extends Option[Nothing]
 
-  def sequence[A](a: List[Option[A]]): Option[List[A]] =
-    a.foldLeft(Some(List.empty[A]): Option[List[A]]) {
-      case (_, NONE) => NONE
-      case (NONE, _) => NONE
-      case (Some(list), Some(v)) => Some(v :: list)
+  object Option {
+
+    def sequence[A](a: List[Option[A]]): Option[List[A]] =
+      a.foldLeft(Some(List.empty[A]): Option[List[A]]) {
+        case (_, NONE) => NONE
+        case (NONE, _) => NONE
+        case (Some(list), Some(v)) => Some(v :: list)
+      }
+
+    def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = {
+      sequence(a.map(f))
     }
 
-  def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = {
-    sequence(a.map(f))
   }
 
   sealed trait Either[+E, +A] {
@@ -92,16 +96,19 @@ object FunctionalErrorHandling {
 
   case class Right[+A](value: A) extends Either[Nothing, A]
 
-  def sequence[E, A](es: List[Either[E, A]]): Either[E, List[A]] = es.foldLeft(Right(List.empty[A]): Either[E, List[A]]) {
-    case (_, left: Left[E]) => left
-    case (left: Left[E], _) => left
-    case (Right(list), Right(v)) => Right(v :: list)
-  }
+  object Either {
 
-  def traverse[E, A, B](as: List[A])(
-    f: A => Either[E, B]): Either[E, List[B]] = {
-    sequence(as.map(f))
-  }
+    def sequence[E, A](es: List[Either[E, A]]): Either[E, List[A]] = es.foldLeft(Right(List.empty[A]): Either[E, List[A]]) {
+      case (_, left: Left[E]) => left
+      case (left: Left[E], _) => left
+      case (Right(list), Right(v)) => Right(v :: list)
+    }
 
+    def traverse[E, A, B](as: List[A])(
+      f: A => Either[E, B]): Either[E, List[B]] = {
+      sequence(as.map(f))
+    }
+
+  }
 
 }
